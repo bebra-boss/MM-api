@@ -119,7 +119,7 @@ response = requests.post(
     "amount": 501,
     "user_id": "12",
     "order_type": 1,
-    "bank": "Sberbank",
+    "bank": "Sberbank" // не нужен если SBP,
     "back_url": "https://your-site.com/success" // опционально
 }
 ```
