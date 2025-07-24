@@ -9,6 +9,7 @@
 6. [Настройки мерчанта](#настройки-мерчанта)
 7. [Callbacks (Webhooks)](#callbacks-webhooks)
 8. [Коды ошибок](#коды-ошибок)
+9. [Тестирование](#тестирование)
 
 ## Авторизация
 
@@ -100,8 +101,16 @@ headers = {
     "Content-Type": "application/json"
 }
 
+# Для продакшена
 response = requests.post(
     "https://monkeysmoney.net/monkey/api/v1/create/deposit-transaction/",
+    headers=headers,
+    data=body
+)
+
+# Для тестирования
+test_response = requests.post(
+    "https://monkeysmoney.net/monkey/api/v1/test/create/deposit-transaction/",
     headers=headers,
     data=body
 )
@@ -112,6 +121,10 @@ response = requests.post(
 ### Создание депозитных транзакций
 
 **Endpoint:** `POST /api/v1/create/deposit-transaction/`
+
+**Тестовый Endpoint:** `POST /api/v1/test/create/deposit-transaction/`
+
+> **Примечание:** Для тестирования используйте тестовые endpoints с префиксом `/test/`. Они работают аналогично основным API, но возвращают фейковые данные для безопасного тестирования интеграции.
 
 **Параметры:**
 ```json
@@ -133,12 +146,37 @@ response = requests.post(
 {
     "detail": "Transaction created successfully",
     "transaction_id": "550e8400-e29b-41d4-a716-446655440000",
-    "amount": {
-        "rub": 501.0,
-        "usdt": 5.27
+    "payment": {
+        "name": "Test User user123_test",
+        "card": "2202 1234 5678 9012",
+        "bank": "Test Bank",
+        "phone_number": "+79001234567"
     },
-    "rate": 95.0,
-    "terminal": "terminal-uuid",
+    "amount": {
+        "rub": 50500,
+        "usdt": 532.63
+    },
+    "rate": 94.85,
+    "link": "https://processing.example.com/550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Тестовый ответ:**
+```json
+{
+    "detail": "Test transaction created successfully",
+    "transaction_id": "550e8400-e29b-41d4-a716-446655440000",
+    "payment": {
+        "name": "Test User user123_test",
+        "card": "2202 1234 5678 9012",
+        "bank": "Test Bank",
+        "phone_number": "+79001234567"
+    },
+    "amount": {
+        "rub": 50500,
+        "usdt": 532.63
+    },
+    "rate": 94.85,
     "link": "https://processing.example.com/550e8400-e29b-41d4-a716-446655440000"
 }
 ```
@@ -265,6 +303,10 @@ response = requests.post(
 ### Создание диспута
 
 **Endpoint:** `POST /api/v1/merchant/create/dispute/`
+
+**Тестовый Endpoint:** `POST /api/v1/test/merchant/create/dispute/`
+
+> **Примечание:** Для тестирования используйте тестовые endpoints с префиксом `/test/`. Они работают аналогично основным API, но возвращают фейковые данные для безопасного тестирования интеграции.
 
 **Content-Type:** `multipart/form-data`
 
@@ -703,6 +745,31 @@ def verify_callback_signature(request_data, signature_header, timestamp_header, 
 - Timestamp не должен отличаться от серверного времени более чем на 1000 секунд
 - Все запросы должны содержать заголовки X-API-KEY, X-SIGNATURE и X-TIMESTAMP
 
+## Тестирование
+
+Для безопасного тестирования интеграции с API доступны специальные тестовые endpoints с префиксом `/test/`:
+
+### Тестовые Endpoints
+
+| Продакшен | Тестовый |
+|-----------|----------|
+| `POST /api/v1/create/deposit-transaction/` | `POST /api/v1/test/create/deposit-transaction/` |
+| `POST /api/v1/merchant/create/dispute/` | `POST /api/v1/test/merchant/create/dispute/` |
+
+### Особенности тестовых API
+
+- **Фейковые данные:** Все ответы содержат тестовые данные, безопасные для использования
+- **Идентичная логика:** Тестовые API работают по тем же правилам, что и продакшен
+- **Безопасность:** Тестовые транзакции не создают реальных платежей
+- **Авторизация:** Используются те же API ключи и подписи
+
+### Рекомендации по тестированию
+
+1. **Начальная интеграция:** Используйте тестовые endpoints для разработки и отладки
+2. **Проверка логики:** Убедитесь, что ваше приложение корректно обрабатывает все возможные ответы
+3. **Переход в продакшен:** После успешного тестирования замените тестовые endpoints на продакшен
+4. **Мониторинг:** В продакшене внимательно отслеживайте статусы транзакций
+
 ## Примеры интеграции
 
 ### Создание депозита с проверкой статуса
@@ -765,7 +832,7 @@ class MerchantAPI:
     
     def create_deposit(self, amount, user_id, order_type, bank, back_url=None):
         """
-        Создание депозитной транзакции
+        Создание депозитной транзакции (продакшен)
         order_type: 1 - C2C, 2 - SBP
         """
         data = {
@@ -780,6 +847,23 @@ class MerchantAPI:
         response = self._make_request('POST', '/api/v1/create/deposit-transaction/', data)
         return response.json()
     
+    def create_deposit_test(self, amount, user_id, order_type, bank, back_url=None):
+        """
+        Создание депозитной транзакции (тестирование)
+        order_type: 1 - C2C, 2 - SBP
+        """
+        data = {
+            "amount": amount,
+            "user_id": user_id,
+            "order_type": order_type,
+            "bank": bank
+        }
+        if back_url:
+            data["back_url"] = back_url
+        
+        response = self._make_request('POST', '/api/v1/test/create/deposit-transaction/', data)
+        return response.json()
+    
     def get_transaction_info(self, transaction_id):
         response = self._make_request('GET', f'/api/v1/merchant/transaction/?transaction_id={transaction_id}')
         return response.json()
@@ -791,8 +875,17 @@ api = MerchantAPI(
     base_url="https://monkeysmoney.net/monkey"
 )
 
-# Создание C2C депозита
+# Создание C2C депозита (продакшен)
 result = api.create_deposit(
+    amount=501,
+    user_id="12",
+    order_type=1,  # C2C
+    bank="Sberbank",
+    back_url="https://mysite.com/success"
+)
+
+# Создание C2C депозита (тестирование)
+test_result = api.create_deposit_test(
     amount=501,
     user_id="12",
     order_type=1,  # C2C
