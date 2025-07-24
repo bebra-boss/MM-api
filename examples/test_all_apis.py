@@ -101,10 +101,10 @@ def main():
     total_tests += 1
     success, result = test_api_method(
         api, "create_deposit_transaction", api.create_deposit_transaction,
-        amount=502,
+        amount=1007,
         user_id="test_user_123",
         order_type=1,  # C2C
-        bank="Sberbank",
+        bank="",
         back_url="https://example.com/success"
     )
     if success:
@@ -221,10 +221,10 @@ def main():
     total_tests += 1
     success, result = test_api_method(
         api, "create_sbp_transaction", api.create_deposit_transaction,
-        amount=750,
+        amount=5006,
         user_id="test_sbp_user_" + str(int(time.time())),
         order_type=2,  # SBP
-        bank="Sberbank"
+        bank=""
     )
     if success:
         successful_tests += 1

@@ -90,6 +90,7 @@ class MerchantAPI:
             data["back_url"] = back_url
         
         response = self._make_request('POST', '/api/v1/create/deposit-transaction/', data)
+        print(response)
         
         if response.status_code != 201:
             raise Exception(f"Failed to create transaction: {response.text}")
@@ -202,13 +203,14 @@ if __name__ == "__main__":
         # Создание C2C транзакции
         print("Создание C2C транзакции...")
         transaction = api.create_deposit_transaction(
-            amount=501,
+            amount=1001,
             user_id="test_user_123",
             order_type=1,  # C2C
-            bank="Sberbank",
+            bank="",
             back_url="https://example.com/success"
         )
         
+        print(transaction)
         print(f"Транзакция создана:")
         print(f"ID: {transaction['transaction_id']}")
         print(f"Ссылка для оплаты: {transaction['link']}")
